@@ -1,46 +1,80 @@
-# Astro Starter Kit: Basics
+# Chess Astro
 
-```sh
-npm create astro@latest -- --template basics
+Proyecto web de ajedrez construido con [Astro](https://astro.build/), [React](https://react.dev/) y la [API de Lichess](https://lichess.org/api).
+
+## 🚀 Características
+
+- **Tablero de ajedrez interactivo** con piezas SVG personalizadas.
+- **Juega contra el bot de Lichess** directamente desde la web.
+- Visualización del **historial de movimientos** y control de tiempo por turno.
+- Integración con la **API oficial de Lichess** para partidas en tiempo real.
+- Interfaz moderna usando **TailwindCSS**.
+
+## 📦 Estructura del Proyecto
+
 ```
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
 /
 ├── public/
 │   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+├── src/
+│   ├── assets/         # Imágenes y SVGs
+│   ├── components/     # Componentes React (tablero, historial, info, etc.)
+│   ├── layouts/        # Layouts de Astro
+│   ├── pages/          # Páginas Astro
+│   ├── styles/         # Estilos globales (Tailwind)
+│   └── utils/          # Utilidades y API de Lichess
+├── package.json
+└── ...
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+## ⚡ Instalación y Uso
 
-## 🧞 Commands
+1. **Clona el repositorio:**
+   ```sh
+   git clone <URL-del-repo>
+   cd chess-astro
+   ```
 
-All commands are run from the root of the project, from a terminal:
+2. **Instala las dependencias:**
+   ```sh
+   npm install
+   ```
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+3. **Configura tu token de Lichess:**
+   - Crea un archivo `.env` en la raíz y añade tu token:
+     ```
+     lichessAPIKey=tu_token_de_lichess
+     ```
+   - O edita directamente en [`src/utils/api-lichess.js`](src/utils/api-lichess.js).
 
-## 👀 Want to learn more?
+4. **Inicia el servidor de desarrollo:**
+   ```sh
+   npm run dev
+   ```
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+5. Abre [http://localhost:4321](http://localhost:4321) en tu navegador.
+
+## 🛠️ Scripts útiles
+
+| Comando           | Acción                                    |
+|-------------------|-------------------------------------------|
+| `npm run dev`     | Inicia el servidor de desarrollo          |
+| `npm run build`   | Compila el sitio para producción          |
+| `npm run preview` | Previsualiza el sitio compilado           |
+
+## 📚 Tecnologías usadas
+
+- [Astro](https://astro.build/)
+- [React](https://react.dev/)
+- [chess.js](https://github.com/jhlywa/chess.js)
+- [TailwindCSS](https://tailwindcss.com/)
+- [Lichess API](https://lichess.org/api)
+
+## ✨ Créditos
+
+- SVGs de piezas de ajedrez: [Wikipedia Chess SVG](https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces)
+- Inspirado por la comunidad de Lichess y proyectos open source.
+
+---
+
+¡Disfruta jugando ajedrez en tu propio sitio web!

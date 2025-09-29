@@ -1,11 +1,48 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import ChessApp from '../components/ChessApp.jsx';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+
+const lichessToken = import.meta.env.TOKEN_API_LICHESS
+const apiAccountUrl = 'https://lichess.org/api/account';
+
+let accountData = null;
+let apiStatus = 'Verificando...';
+
+try {
+    // 2. Realiza la solicitud GET con el encabezado de autorización
+    const response = await fetch(apiAccountUrl, {
+        method: 'GET',
+        headers: {
+            // Lichess requiere el encabezado Authorization con el formato "Bearer <token>"
+            'Authorization': `Bearer ${lichessToken}`
+        }
+    });
+
+    // 3. Verifica el estado de la respuesta
+    if (response.ok) {
+        accountData = await response.json();
+        apiStatus = `✅ ¡API FUNCIONANDO! Usuario autenticado: ${accountData.username}`;
+    } else {
+        // Manejo de errores 401 (Unauthorized), 429 (Too Many Requests), etc.
+        const errorText = await response.text();
+        apiStatus = `❌ ERROR ${response.status}: ${response.statusText}. Respuesta: ${errorText.substring(0, 100)}...`;
+    }
+
+} catch (error: any) {
+    // Manejo de errores de red (por ejemplo, si lichess.org no es accesible)
+    apiStatus = `❌ ERROR DE RED: ${error.message}`;
+}
+console.log(apiStatus)
 ---
 
-<Layout>
-	<Welcome />
+<Layout title='Chess' description='Chess game with commands'>
+	<header>
+		<h1>Chess</h1>
+	</header>
+	<main>
+		{apiStatus && (
+			<ChessApp client:load />
+		)}
+	</main>
 </Layout>
