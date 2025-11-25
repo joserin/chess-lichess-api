@@ -1,5 +1,7 @@
 # build output
 dist/
+api-lichess
+useYoutubeLiveChat
 
 # generated types
 .astro/

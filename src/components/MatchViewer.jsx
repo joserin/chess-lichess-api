@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * Componente que muestra el historial de movimientos y un campo de entrada para la jugada.
@@ -12,6 +12,14 @@ import React, { useState } from 'react';
 const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }) => {
   // Estado local para almacenar el valor del input del movimiento
   const [inputValue, setInputValue] = useState('');
+  const historyBoxRef = useRef(null);
+
+  useEffect(() => {
+        const historyBox = historyBoxRef.current;
+        if (historyBox) {
+            historyBox.scrollTop = historyBox.scrollHeight;
+        }
+    }, [historial]);
 
   // Función para manejar el envío del formulario
   const handleSubmit = (e) => {
@@ -28,10 +36,6 @@ const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }
 
   // Función para renderizar el historial en un formato de lista
   const renderHistorial = () => {
-    // El historial se asume que viene en formato de jugadas PGN completas (ej: "e4", "e5", "Nf3", "Nc6")
-    // Se agrupan los movimientos de blancas y negras para mostrarlos en formato PGN (1. e4 e5)
-    
-    // Si el historial viene plano (ej: ["e4", "e5", "Nf3"]), lo agrupamos
     const movimientosAgrupados = [];
     for (let i = 0; i < historial.length; i += 2) {
       const numMovimiento = Math.floor(i / 2) + 1;
@@ -41,6 +45,7 @@ const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }
         <p key={numMovimiento} style={moveItemStyle}>
           <span style={moveNumStyle}>{numMovimiento}.</span> 
           <span style={moveStyle(turno === 'Blanco' && i === historial.length - 1)}>{movimientoBlanco}</span>
+          <span>  </span>
           {movimientoNegro !== '...' && 
             <span style={moveStyle(turno === 'Negro' && i + 1 === historial.length - 1)}>{movimientoNegro}</span>
           }
@@ -50,18 +55,16 @@ const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }
     return movimientosAgrupados;
   };
   
-  const placeholderText = partidaTerminada ? 
-    'Partida terminada' : 
-    (turno === 'Blanco' ? 'Ej: e4, e2e4' : 'Ej: e5, e7e5');
-
   return (
     <div style={containerStyle}>
       <h2>Historial de Movimientos</h2>
 
       {/* Área del Historial */}
-      <div style={historyBoxStyle}>
+      <div style={historyBoxStyle} ref={historyBoxRef}>
         {historial.length === 0 ? (
           <p style={{ color: '#888' }}>La partida aún no ha comenzado...</p>
+        ) : partidaTerminada ? (
+          <p style={finalMessageStyle}>Fin de la Partida.</p>
         ) : (
           <div style={movesListStyle}>
             {renderHistorial()}
@@ -69,22 +72,7 @@ const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }
         )}
       </div>
 
-      {/* Formulario de Entrada de Movimiento */}
-      <form onSubmit={handleSubmit} style={formStyle}>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder={placeholderText}
-          disabled={!partidaTerminada && (turno === 'Negro' && !historial.length % 2 === 0)}
-          style={inputStyle}
-        />
-        <button type="submit" disabled={partidaTerminada || turno === 'Negro'} style={buttonStyle(turno === 'Blanco' && !partidaTerminada)}>
-          {turno === 'Blanco' && !partidaTerminada ? 'Hacer Jugada' : 'Esperando...'}
-        </button>
-        
-        {partidaTerminada && <p style={finalMessageStyle}>Fin de la Partida.</p>}
-      </form>
+      
     </div>
   );
 };
@@ -94,44 +82,45 @@ export default MatchViewer;
 // --- ESTILOS EN LÍNEA ---
 
 const containerStyle = {
-  width: '250px',
-  padding: '15px',
-  backgroundColor: '#f5f5f5',
+  width: '100%',
+  padding: '5px',
+  backgroundColor: 'rgb(31 41 55)',
   border: '1px solid #ccc',
   borderRadius: '8px',
   display: 'flex',
   flexDirection: 'column',
+  gap: '10px',
   boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
 };
 
 const historyBoxStyle = {
   flexGrow: 1,
-  height: '350px',
+  height: '340px',
   maxHeight: '350px',
-  overflowY: 'auto', // Permite scroll si hay muchos movimientos
-  backgroundColor: '#fff',
-  border: '1px solid #ddd',
+  overflowY: 'auto',
+  backgroundColor: 'rgb(55 65 81)',
   borderRadius: '4px',
-  padding: '10px',
-  marginBottom: '15px',
+  padding: '3px',
 };
 
 const movesListStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  alignItems: 'center',
+  justifyItems: 'start',
   gap: '5px',
 };
 
 const moveItemStyle = {
-  margin: '0 5px 0 0',
+  margin: '0 1px 0 0',
   padding: '2px 0',
   fontSize: '14px',
-  minWidth: '100px', // Asegura que cada par de movimientos ocupe un espacio decente
+  minWidth: '72px',
 };
 
 const moveNumStyle = {
   fontWeight: 'bold',
-  color: '#333',
+  color: 'white',
   marginRight: '3px',
 };
 

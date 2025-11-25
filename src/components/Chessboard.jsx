@@ -145,11 +145,11 @@ const boardContainerStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(8, 1fr)',
   gridTemplateRows: 'repeat(8, 1fr)',
-  width: 'min(90vw, 500px)', // Tablero responsivo, ajusta si es necesario
-  height: 'min(90vw, 500px)',
+  width: 'min(90vw, 600px)', // Tablero responsivo, ajusta si es necesario
+  height: 'min(90vw, 600px)',
   border: '4px solid #333',
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
-  margin: '20px auto',
+  margin: 'auto',
   aspectRatio: '1 / 1',
 };
 
@@ -160,7 +160,7 @@ const squareStyles = {
   alignItems: 'center',
   width: '100%',
   height: '100%',
-  fontSize: '10px',
+  fontSize: '14px',
   fontWeight: 'bold',
   userSelect: 'none',
 };
@@ -171,7 +171,7 @@ const fileRankStyles = (isFile, isLight) => ({
   color: isLight ? 'rgb(181, 136, 99)' : 'rgb(240, 217, 181)',
   // Posición para las etiquetas de archivo/rango
   ...(isFile
-    ? { bottom: '2px', right: '4px' } // Etiqueta de archivo (a-h)
-    : { top: '2px', left: '4px' }      // Etiqueta de rango (1-8)
+    ? { bottom: '1px', right: '2px' } // Etiqueta de archivo (a-h)
+    : { top: '1px', left: '2px' }      // Etiqueta de rango (1-8)
 ),
 });

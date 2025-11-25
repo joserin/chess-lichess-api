@@ -14,9 +14,10 @@
     "@types/react": "^19.1.14",
     "@types/react-dom": "^19.1.9",
     "astro": "^5.14.1",
-    "chess.js": "^1.4.0",
+    "chess.js": "1.4.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "tailwindcss": "^4.1.13"
+    "tailwindcss": "^4.1.13",
+    "youtube-chat": "2.2.0"
   }
 }

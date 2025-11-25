@@ -1,311 +1,342 @@
 // src/components/ChessApp.jsx (El Estado Central/Padre)
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useChessGame } from '../hooks/useChessGame';
+import { useStockfishAnalysis } from '../hooks/useStockfishAnalysis';
 import MatchViewer from './MatchViewer';
 import Chessboard from './Chessboard';
 import GameInformation from './GameInformation';
-import { Chess } from 'chess.js';
-//import { mockSendMove, mockGetBotResponse, mockStartGame } from '../utils/api-mock'; 
-import { SendMove, InitialStreamGame, StartGame } from '../utils/api-lichess';
+import PlayInfoPanel from './PlayInfoPanel';
 
 export default function ChessApp() {
-    // 💡 Aquí se centraliza el estado de la partida
-    const inicialFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-    const [fen, setFen] = useState(inicialFen);
-    const [gameState, setGameState] = useState({
-        gameId: null,
-        turno: 'white',
-        historial: [],
-        partidaTerminada: false,
-    });
-    const jugadorColor = 'white';
-    const chess = useRef(new Chess());
 
-    //----------------------------------API LICHESS--------------------------------
-    const fetchSendMove = SendMove;
-    const fetchInitialStream = InitialStreamGame; 
-    const fetchStartGame  = StartGame ; 
+    const [jugadorColor, setJugadorColor] = useState('white');
+    //TURNO DEL JUGADOR
+    const TIEMPO_MAXIMO_TURNO = 60;
+    const [tiempoRestante, setTiempoRestante] = useState(TIEMPO_MAXIMO_TURNO);
+    const intervalRef = useRef(null);
+    const votesRef = useRef([]);
+    const [proposedMoves, setProposedMoves] = useState([]); // 💡 NUEVO ESTADO: Almacena los movimientos propuestos (votos)
+    //SIGUIENTE PARTIDA
+    const TIEMPO_ESPERA_REINICIO = 180; 
+    const [tiempoRestanteReinicio, setTiempoRestanteReinicio] = useState(TIEMPO_ESPERA_REINICIO);
+    const [botLevel, setBotLevel] = useState(1);
+    const intervalReinicioRef = useRef(null);
+    const nivelAjustadoRef = useRef(false);
+    const [shouldStartChat, setShouldStartChat] = useState(false);
+
+    const [userScores, setUserScores] = useState({});
+    const userVotesMapRef = useRef(new Map());
     
-    
-    const iniciarGameStream = useCallback(async (gameId) => {
-        
-        try {
-            //LLAMAR A API LICHESS InitialStreamGame
-            const response = await fetchInitialStream(gameId);
+    // 1. OBTENER LÓGICA DEL JUEGO
+    const { 
+        fen,
+        gameState,
+        isGameActive,
+        esMovimientoValidoLocal,
+        handleMove,
+        handleTimeout,
+        iniciarPartidaContraBot,
+     } = useChessGame(jugadorColor);
 
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
+    // 2. OBTENER LÓGICA DE ANÁLISIS
+    const { topMovesRef } = useStockfishAnalysis(
+        fen,
+        gameState,
+        isGameActive,
+        jugadorColor,
+        botLevel,
+    );
 
-            // Usamos el lector de stream para procesar los datos línea por línea
-            const reader = response.body
-                .pipeThrough(new TextDecoderStream())
-                .getReader();
-            
-            // Función auxiliar para leer el stream línea por línea
-            const readStream = async () => {
-                let buffer = "";
-                while (true) {
-                    const { done, value } = await reader.read();
-                    
-                    if (done) {
-                        console.log("Stream de partida finalizado.");
-                        break;
-                    }
-                    
-                    // Procesar el stream línea por línea
-                    buffer += value;
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() || ""; // La última parte incompleta se guarda en buffer
-
-                    for (const line of lines) {
-                        if (line.trim()) {
-                            try {
-                                const event = JSON.parse(line);
-                                console.log("Nuevo evento recibido:", event);
-                                procesarEvento(event);
-                            } catch (e) {
-                                console.error("Error al parsear JSON del stream:", e, line);
-                            }
-                        }
-                    }
-                }
-            };
-
-            readStream();
-
-        } catch (error) {
-            console.error("Fallo al conectar al stream de la partida:", error);
-        }
+    // --------------------------
+    // Wrapper para setProposedMoves
+    // --------------------------
+    const updateProposedMoves = useCallback((newMoves) => {
+        setProposedMoves(newMoves);
+        votesRef.current = newMoves;
     }, []);
 
-    // Función para procesar los datos de cada evento
-    const procesarEvento = (event) => {
-        switch (event.type) {
-            case 'gameFull':
-
-                const fullState = event.state;
-                let fenState = event.initialFen === 'startpos' 
-                    ? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' : event.initialFen
-
-                const tempGame = new Chess(fenState);
-    
-                // 1c. Aplicar todos los movimientos de la partida.
-                const allMoves = fullState.moves ? fullState.moves.split(' ') : [];
-                for (const move of allMoves) {
-                    if (move) {
-                        tempGame.move(move, { sloppy: true }); 
-                    }
-                }
-                
-                const currentFen = tempGame.fen();
-
-                // 1. CAPTURAR FEN (Tablero)
-                setFen(currentFen);
-                console.log(fenState)
-                // 2. ACTUALIZAR ESTADO DEL JUEGO
-                setGameState(prevState => ({
-                    ...prevState,
-                    historial: event.state.moves ? event.state.moves.split(' ') : [],
-                    turno: currentFen.split(' ')[1] === 'w' ? 'white' : 'black',
-                    partidaTerminada: event.state.status !== 'started',
-                }));
-                break;
-
-            case 'gameState':
-                
-                console.log("Nuevo estado de juego:", event);
-
-                const currentMoves = event.moves ? event.moves.split(' ') : [];
-                const tempGameState = new Chess(); 
-
-                for (const move of currentMoves) {
-                    if (move) {
-                        tempGameState.move(move, { sloppy: true }); 
-                    }
-                }
-
-                const currentFenState = tempGameState.fen();
-
-                // 1. CAPTURAR FEN (Tablero)
-                setFen(event.fen || currentFenState);
-                // 2. ACTUALIZAR ESTADO DEL JUEGO
-                setGameState(prevState => ({
-                    ...prevState,
-                    historial: currentMoves,
-                    turno: currentFenState.split(' ')[1] === 'w' ? 'white' : 'black',
-                    partidaTerminada: event.status !== 'started',
-                }));
-                break;
-                
-            case 'chatLine':
-                // Opcional: Manejar mensajes de chat.
-                console.log(`Chat: ${event.username}: ${event.text}`);
-                break;
-
-            case 'gameFinish':
-                // La partida ha terminado.
-                console.log("Partida terminada. Resultado:", event.status);
-                setGameState(prevState => ({
-                    ...prevState,
-                    partidaTerminada: true,
-                }));
-                break;
-                
-            // Otros posibles eventos: 'error', 'challenge', etc.
-            default:
-                console.log(`Evento desconocido: ${event.type}`, event);
-                break;
-        }
-    }
-
-    const iniciarPartidaContraBot = useCallback(async () => {
-
-        try {
-            const response = await fetchStartGame(1, jugadorColor);
-            const data = await response.json();
-
-            if (response.ok && data.id) {
-                console.log(`Partida [${data.id}] iniciada. ¡Listo para el stream!`);
-                setGameState(prevState => ({
-                    ...prevState,
-                    gameId: data.id,
-                }));
-                
-                // **PASO 2: INICIAR EL GAME STREAM**
-                iniciarGameStream(data.id);
-                
-            } else {
-                console.error("Error al crear la partida:", data);
-            }
-        } catch (error) {
-            console.error("Fallo de conexión:", error);
-        }
-
-
-    }, [jugadorColor, fetchStartGame, iniciarGameStream ]);
-
     useEffect(() => {
-        // Llamar a la función al montar el componente (una sola vez)
-        iniciarPartidaContraBot();
-    }, [iniciarPartidaContraBot]);
+        votesRef.current = proposedMoves;
+    }, [proposedMoves]);
 
-    const handleMove = useCallback(async (moveUCI) => {
-        
-        const gameId = gameState.gameId;
-        if (!gameId) {
-            console.error('Error: La partida no ha sido iniciada o no se encontró la ID de Lichess.');
-            return;
-        }
-        console.log(`Jugada del usuario recibida: ${moveUCI}`);
-        
-        // 1. Validar el movimiento (usando chess.js)
+    //----------------------------------------------------------------------
+    //FUNCION PARA CAMBIAR COLOR Y REINICIAR JUEGO
+    //----------------------------------------------------------------------
 
-        let newFen = fen;
-        let moveResult = null;
-        try {
-            // 💡 PASO 1: VALIDAR Y APLICAR EL MOVIMIENTO LOCALMENTE
-            const tempGame = new Chess(fen);
-            // El movimiento se intenta y, si es legal, actualiza tempGame.
-            moveResult = tempGame.move(moveUCI, { sloppy: true }); 
+    const iniciarProximaPartida = useCallback(() => {
+
+        const { partidaTerminada, ganador } = gameState;
+        /*
+        if (partidaTerminada && ganador && !nivelAjustadoRef.current) {
+
+            console.log(gameState)
             
-            if (!moveResult) {
-                console.warn(`Movimiento ilegal: ${moveUCI}`);
-                return;
+            
+            if (resultado) {
+                console.log(`Resultado de la partida: ${resultado}`)
+                ajustarNivel(resultado);
+                nivelAjustadoRef.current = true;
             }
-            
-            newFen = tempGame.fen();
+        }*/
 
-        } catch (error) {
-            console.error("Error al validar el movimiento localmente:", error);
+        clearInterval(intervalReinicioRef.current);
+
+        const nextColor = (jugadorColor === 'white' ? 'black' : 'white');
+        const resultadoPartida = (ganador === jugadorColor) ? 'jugador' : ganador !== 'draw' ? 'bot' : 'empate';
+
+        const resultado = ( () =>{
+            const MIN_LEVEL = 1;
+            const MAX_LEVEL = 8;
+            let newLevel;
+
+            if (resultadoPartida === 'jugador') {
+                newLevel = Math.min(botLevel + 1, MAX_LEVEL);
+                console.log(`Jugador gana. Subiendo nivel a ${newLevel}`);
+            } else if (resultadoPartida === 'bot') {
+                newLevel = Math.max(botLevel - 1, MIN_LEVEL);
+                console.log(`Bot gana. Bajando nivel a ${newLevel}`);
+            } else {
+                newLevel = botLevel;
+                console.log('Resultado no afecta el nivel. Manteniendo nivel.');
+            }
+            return newLevel;
+        })();
+
+        console.log('nivel bot:', resultado)
+
+        iniciarPartidaContraBot(resultado, nextColor);
+        setJugadorColor(nextColor);
+        setBotLevel(resultado);
+        setTiempoRestanteReinicio(TIEMPO_ESPERA_REINICIO);
+
+        nivelAjustadoRef.current = false;
+
+    }, [iniciarPartidaContraBot, jugadorColor, botLevel, gameState.ganador, /*ajustarNivel*/]);
+
+    // 💡 FUNCIÓN 1: Para el inicio de la PRIMERA partida (color: 'white')
+    const iniciarPrimeraPartida = useCallback(() => {
+        iniciarPartidaContraBot(1, jugadorColor); 
+    }, [iniciarPartidaContraBot, jugadorColor, botLevel]);
+
+    // ---------------------------------------------------------------------
+    // FUNCIÓN CENTRAL DE PUNTUACIÓN (awardScores)
+    // ---------------------------------------------------------------------
+    const awardScores = useCallback((winningMove) => {
+        // Puntos base según la posición en el análisis de Stockfish
+        const scoreMap = {
+            0: 5,
+            1: 3,
+            2: 1,
+        };
+
+        // Obtenemos los 3 mejores movimientos UCI de Stockfish
+        const stockfishMoves = topMovesRef.current.slice(0, 3).map(move => move.move);
+        
+        // Buscamos si el movimiento ganador está en el Top 3 y obtenemos el índice
+        const winningRank = stockfishMoves.indexOf(winningMove);
+        const points = scoreMap[winningRank] || 0; // 0 puntos si no está en el Top 3
+
+        if (points === 0) {
+            console.log(`Movimiento ganador (${winningMove}) no está entre el Top 3 de Stockfish. Puntos: 0.`);
             return; 
         }
-        
-        try {
-            const response = await fetchSendMove(gameState.gameId, moveUCI);
 
-            console.log('respuesta de movimiento -- ', response)
-            const tempGame = new Chess(fen);
-            moveResult = tempGame.move(moveUCI, { sloppy: true });
+        const votesMap = userVotesMapRef.current; // Mapa de Autor -> Voto
 
-            if (response.ok) {
-                console.log(`Movimiento ${moveUCI} enviado exitosamente a Lichess.`);
-                
-                // 2. Actualizar el FEN y el estado
-                setFen(newFen);
-                setGameState(prevState => ({
-                    ...prevState,
-                    historial: [...prevState.historial, moveUCI],
-                    turno: (prevState.turno === "white" ? "black" : "white"),
-                }));
-                /*
-                if (gameState.gameId) {
-                    //actualizar el estado cuando el bot responde.
-                    //getBotMove(gameState.gameId, moveUCI);
-                    console.log(gameState.gameId)
-                }*/
-            } else {
-                // Manejar errores de Lichess (ej: movimiento ilegal, token expirado)
-                const errorData = await response.json();
-                console.error('Error al enviar el movimiento a Lichess:', errorData.error || response.statusText);
-            }
-        } catch (error) {
-            console.error('Error de red al comunicarse con Lichess:', error);
+        console.log('VOTOS------',votesMap)
+
+        setUserScores(prevScores => {
+            const newScores = { ...prevScores };
+            
+            votesMap.forEach((move, author) => {
+                const authorName = author.name;
+                // Si el voto del usuario coincide con el movimiento ganador
+                if (move === winningMove) {
+                    newScores[authorName] = (newScores[authorName] || 0) + points;
+                }
+            });
+
+            console.log(`Puntos otorgados: ${points} por el movimiento ${winningMove}.`);
+            return newScores;
+        });
+
+    }, [topMovesRef]);
+
+    // ---------------------------------------------------------------------
+    //  LÓGICA DEL EFECTO (El Reloj) TURNO JUGADOR
+    // ---------------------------------------------------------------------
+
+    useEffect(() => {
+        clearInterval(intervalRef.current);
+        if (!isGameActive || gameState.partidaTerminada) {
+            setShouldStartChat(false);
+            return; 
         }
+        const esMiTurno = gameState.turno === jugadorColor;
 
-    }, [fen, gameState.gameId, fetchSendMove, iniciarGameStream, /*fetchGetBotResponse*/]);
+        // 2. INICIAR/REINICIAR: Si es el turno del usuario, reiniciamos el tiempo
+        if (esMiTurno) {
+            setTiempoRestante(TIEMPO_MAXIMO_TURNO);
+            setShouldStartChat(true);
 
-    const handleTimeout = (() => {
+            intervalRef.current = setInterval(() => {
+                setTiempoRestante((prevTime) => {
+                if (prevTime <= 1) {
+                    clearInterval(intervalRef.current);
+                    setShouldStartChat(false);
 
-        if (gameState.partidaTerminada) return;
-        console.log("¡Tiempo agotado! Realizando movimiento ");
+                    const currentVotes = votesRef.current;
+                    let legalMoveFound = false;
+                    let winningMove = null;
+                    console.log('total votos nuevos --- ',currentVotes);
 
-        // 1. Lógica para obtener un movimiento aleatorio
+                    //EJECUTAR MOVIMIENTO POR TIEMPO ACABADO
+                    if(currentVotes.length > 0){
+                        
+                        for (const vote of currentVotes) {
+                            if (esMovimientoValidoLocal(vote.move, fen)) {
+                                winningMove = vote.move;
+                                handleMove(winningMove);
+                                legalMoveFound = true;
+                                break;
+                            }
+                        }
+                        if (!legalMoveFound) {
+                            winningMove = topMovesRef.current[0]?.move || null;
+                            handleTimeout(topMovesRef);
+                        }
+                        updateProposedMoves([]);
 
-        //2. Actualizar el estado y pasar el turno al Bot
-        setFen(newFenAfterForcedMove);
+                    }else{
+                        winningMove = topMovesRef.current[0]?.move || null;
+                        handleTimeout(topMovesRef);
+                    }
 
-        // 3. Actualizar el estado y pasar el turno al Bot
-        setGameState(prevState => ({
-            ...prevState,
-            turno: (prevState.turno === "white" ? "black" : "white"),
-            historial: [...prevState.historial, movimientoForzado],
-        }));
+                    // 🚨 OTORGAR PUNTOS 🚨
+                    if (winningMove) {
+                        awardScores(winningMove);
+                    }
+                    
+                    setProposedMoves([]);
+                    return 0;
+                }
+                return prevTime - 1;
+                });
+            }, 1000);
+        } else {
+            setTiempoRestante(TIEMPO_MAXIMO_TURNO);
+            setProposedMoves([]);
+            setShouldStartChat(false);
+            userVotesMapRef.current.clear();
+        }
+        return () => clearInterval(intervalRef.current);
+        
+    }, [gameState.turno, jugadorColor, gameState.partidaTerminada, handleTimeout, topMovesRef, awardScores]);
 
-    }, [gameState]);
+    // ---------------------------------------------------------------------
+    //  LÓGICA DEL EFECTO (El Reloj) PROXIMA PARTIDA
+    // ---------------------------------------------------------------------
+    useEffect(() => {
+        clearInterval(intervalReinicioRef.current);
+        
+        const { partidaTerminada } = gameState;
+
+        if (partidaTerminada) {
+
+            setTiempoRestanteReinicio(TIEMPO_ESPERA_REINICIO); 
+
+            intervalReinicioRef.current = setInterval(() => {
+                setTiempoRestanteReinicio((prevTime) => {
+                    if (prevTime <= 1) {
+                        clearInterval(intervalReinicioRef.current);
+                        console.log('nivel bot',botLevel)
+                        iniciarProximaPartida();
+                        return 0;
+                    }
+                    return prevTime - 1;
+                });
+            }, 1000);
+            
+        } 
+        return () => clearInterval(intervalReinicioRef.current);
+        
+    }, [gameState.partidaTerminada, iniciarProximaPartida, jugadorColor]);
 
     return (
         <div style={ appContainerStyle }>
-            {/* IZQUIERDA: Pasa el historial y la función para mover */}
-            <MatchViewer 
-                historial={gameState.historial} 
-                turno={gameState.turno} 
-                onMove={handleMove} // Recibe la jugada del usuario (UCI/PGN)
-                partidaTerminada={gameState.partidaTerminada}
-            />
-
-            {/* CENTRO: Pasa la posición actual del tablero y la función para mover }*/}
-            <Chessboard
-                fen={fen} 
-                onMove={handleMove}
-                orientation="white" // o "black"
-            />
+            {/* IZQUIERDA: Votos, unicio del juego, top votos */}
+            <section>
+                <PlayInfoPanel
+                    fen={fen}
+                    isGameActive={isGameActive}
+                    proposedMoves={proposedMoves}
+                    shouldStartChat={shouldStartChat}
+                    partidaTerminada={gameState.partidaTerminada}
+                    tiempoRestanteReinicio={tiempoRestanteReinicio}
+                    iniciarPartidaContraBot={iniciarPrimeraPartida}
+                    esMovimientoValidoLocal={esMovimientoValidoLocal}
+                    setProposedMoves={setProposedMoves}
+                    userVotesMapRef={userVotesMapRef}
+                    userScores={userScores}
+                />                
+            </section>
+             {/* CENTRO: Pasa la posición actual del tablero y la función para mover }*/}
+            <section>
+               
+                {isGameActive && (
+                    <Chessboard
+                        fen={fen} 
+                        onMove={handleMove}
+                        orientation="white"
+                    />
+                )}
+                
+                {!isGameActive && (
+                    <div style={initialMessageStyle}>
+                        <h2>Pulsa "Iniciar Partida" para comenzar a jugar.</h2>
+                    </div>
+                )}
+            </section>
 
             {/* DERECHA: Pasa el turno y el tiempo */}
-            <GameInformation 
-                turno={gameState.turno}
-                jugadorColor={jugadorColor}
-                onTimeout={handleTimeout}
-            />
+            <section className="flex flex-col gap-2 text-center">
+                <GameInformation
+                    botLevel={botLevel}
+                    tiempoRestante={tiempoRestante}
+                    jugadorColor={jugadorColor}
+                />
+                {/*Pasa el historial y la función para mover */}
+                <MatchViewer 
+                    historial={gameState.historial} 
+                    turno={gameState.turno} 
+                    onMove={handleMove}
+                    partidaTerminada={gameState.partidaTerminada}
+                />
+            </section>
+            
         </div>
     );
 }
 
 const appContainerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
+    display: 'grid',
+    gridTemplateColumns: '1fr 2fr 1fr',
     gap: '20px',
-    padding: '20px',
-    maxWidth: '1200px',
-    margin: '20px auto',
-    alignItems: 'flex-start', // Alinea los elementos en la parte superior
+    padding: '10px',
+    maxWidth: '100%',
+    margin: '10px auto',
+    alignItems: 'flex-start',
+};
+
+const initialMessageStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 'min(90vw, 600px)',
+    height: 'min(90vw, 600px)',
+    margin: 'auto',
+    backgroundColor: 'rgb(55 65 81)',
+    borderRadius: '8px',
+    textAlign: 'center',
+    color: 'white',
 };
