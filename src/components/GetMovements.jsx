@@ -1,5 +1,3 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-
 /**
  * Componente que muestra el historial de movimientos y un campo de entrada para la jugada.
  *
@@ -9,8 +7,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
  */
 
 const GetMovements = ({
-    partidaTerminada,
-    isGameActive,
     userScores,
 }) =>{
 
@@ -21,7 +17,11 @@ const GetMovements = ({
     
     return(
         <div className='flex flex-col gap-2'>
-            <header>Top Usuarios</header>
+            <header>
+                <h3 className="text-center font-bold">
+                    Top Usuarios
+                </h3>
+            </header>
             <section style={box}>
                 <div style={topMovesStyle}>
                     {sortedScores.length > 0 ? (
@@ -41,7 +41,7 @@ const GetMovements = ({
             </section>
             <section>
                 <div style={box}>
-                    <p className='text-sm'>Envía tus movimientos (ej: m-e2e4) al chat de YouTube para votar.</p>
+                    <p>Envía tus movimientos (ej: m-e2e4) al chat de YouTube para votar.</p>
                 </div>
             </section>
         </div>

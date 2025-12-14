@@ -160,7 +160,7 @@ const squareStyles = {
   alignItems: 'center',
   width: '100%',
   height: '100%',
-  fontSize: '14px',
+  fontSize: '20px',
   fontWeight: 'bold',
   userSelect: 'none',
 };
@@ -168,10 +168,11 @@ const squareStyles = {
 const fileRankStyles = (isFile, isLight) => ({
   position: 'absolute',
   // Color del texto que contrasta con el color de la casilla
-  color: isLight ? 'rgb(181, 136, 99)' : 'rgb(240, 217, 181)',
+  //color: isLight ? 'rgb(181, 136, 99)' : 'rgb(240, 217, 181)',
+  color: 'rgb(240, 217, 181)',
   // Posición para las etiquetas de archivo/rango
   ...(isFile
-    ? { bottom: '1px', right: '2px' } // Etiqueta de archivo (a-h)
-    : { top: '1px', left: '2px' }      // Etiqueta de rango (1-8)
+    ? { bottom: '-25px', right: '2px' } // Etiqueta de archivo (a-h)
+    : { top: '1px', left: '-15px' }      // Etiqueta de rango (1-8)
 ),
 });

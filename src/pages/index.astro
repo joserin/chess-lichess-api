@@ -1,6 +1,6 @@
 ---
+import GameConfig from '../components/GameConfig';
 import Layout from '../layouts/Layout.astro';
-import ChessApp from '../components/ChessApp.jsx';
 
 const lichessToken = import.meta.env.TOKEN_API_LICHESS
 const apiAccountUrl = 'https://lichess.org/api/account';
@@ -27,15 +27,17 @@ try {
 } catch (error: any) {
     apiStatus = `❌ ERROR DE RED: ${error.message}`;
 }
+
 ---
 
 <Layout title='Ajedrez colaborativo' description='Juego de ajedrez con comandos'>
-	<header class="text-center text-4xl font-bold p-2">
+	<header class="text-center text-4xl font-bold p-2 mt-3">
 		<h1>Ajedrez UCL VS Bot</h1>
 	</header>
 	<main>
-		{apiStatus && (
-			<ChessApp client:load />
-		)}
+
+        {apiStatus &&  (
+            <GameConfig client:load />
+        )}
 	</main>
 </Layout>

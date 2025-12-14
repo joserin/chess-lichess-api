@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import GetMovements from './GetMovements';
 import GetAnalysis from './GetAnalysis';
 
@@ -21,6 +21,7 @@ const PlayInfoPanel = ({
     userVotesMapRef,
     userScores,
     fen,
+    gamesId,
     }) => {
 
     //const userVotesRef = useRef(new Map());
@@ -35,7 +36,6 @@ const PlayInfoPanel = ({
             console.warn(`Movimiento propuesto ilegal: ${moveUCI}`);
             return false;
         }
-        console.log(`Voto valido: ${moveUCI}`);
         return true;
 
     }, [esMovimientoValidoLocal]);
@@ -94,7 +94,7 @@ const PlayInfoPanel = ({
             userVotesMapRef.current.clear();
             return;
         }
-        console.log('simplifiedVote', simplifiedVote)
+        
         const { move, author } = simplifiedVote;
         const authorName = author.name;
     
@@ -123,7 +123,7 @@ const PlayInfoPanel = ({
     return (
         <div style={containerStyle}>
             <header>
-                <h2>Control y Votos</h2>
+                <h2 className='p-1 text-xl font-bold'>Control y Votos</h2>
             </header>
             <GetAnalysis
                 partidaTerminada={partidaTerminada}
@@ -133,11 +133,10 @@ const PlayInfoPanel = ({
                 tiempoRestanteReinicio={tiempoRestanteReinicio}
                 shouldStartChat={shouldStartChat}
                 handleNewChatMessage={handleNewChatMessage}
+                gamesId={gamesId}
             />
             
             <GetMovements
-                partidaTerminada={partidaTerminada}
-                isGameActive={isGameActive}
                 userScores={userScores}
             />
         </div>
@@ -149,7 +148,7 @@ export default PlayInfoPanel;
 // --- ESTILOS EN LÍNEA ---
 const containerStyle = {
   width: '100%',
-  padding: '15px',
+  padding: '5px',
   backgroundColor: 'rgb(31 41 55)',
   border: '1px solid #ccc',
   borderRadius: '8px',

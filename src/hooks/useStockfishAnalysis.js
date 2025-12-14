@@ -96,12 +96,8 @@ export const useStockfishAnalysis = (fen, gameState, isGameActive, jugadorColor,
             if (depth >= MAX_DEPTH) {
                  stopAnalysis();
                  setIsAnalyzing(false); 
-                 console.log(`Análisis detenido al alcanzar profundidad ${MAX_DEPTH}`);
             }
 
-        } else {
-            // Esto captura mensajes que no son líneas de análisis importantes (ej: "info string NNUE...")
-            console.log('Mensaje no relevante para Top Moves:', message);
         }
     }, [MAX_DEPTH]);
 
@@ -137,6 +133,4 @@ export const useStockfishAnalysis = (fen, gameState, isGameActive, jugadorColor,
     return {
         topMovesRef,
     };
-
-    
 };

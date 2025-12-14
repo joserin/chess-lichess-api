@@ -271,8 +271,6 @@ export const useChessGame = (jugadorColor) => {
             }
     }, [fetchStartGame, iniciarGameStream ]);
 
-
-
     //Elige una jugada de la lista de Stockfish (topMovesRef) y la ejecuta a través de handleMove.
     const handleTimeout = useCallback(async (topMovesRef) => {
 

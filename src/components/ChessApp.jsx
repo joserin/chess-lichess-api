@@ -6,10 +6,11 @@ import MatchViewer from './MatchViewer';
 import Chessboard from './Chessboard';
 import GameInformation from './GameInformation';
 import PlayInfoPanel from './PlayInfoPanel';
+import MoveHelpBar from './MoveHelpBar';
 
-export default function ChessApp() {
+export default function ChessApp({level , color }) {
 
-    const [jugadorColor, setJugadorColor] = useState('white');
+    const [jugadorColor, setJugadorColor] = useState(color);
     //TURNO DEL JUGADOR
     const TIEMPO_MAXIMO_TURNO = 60;
     const [tiempoRestante, setTiempoRestante] = useState(TIEMPO_MAXIMO_TURNO);
@@ -19,7 +20,7 @@ export default function ChessApp() {
     //SIGUIENTE PARTIDA
     const TIEMPO_ESPERA_REINICIO = 180; 
     const [tiempoRestanteReinicio, setTiempoRestanteReinicio] = useState(TIEMPO_ESPERA_REINICIO);
-    const [botLevel, setBotLevel] = useState(1);
+    const [botLevel, setBotLevel] = useState(level);
     const intervalReinicioRef = useRef(null);
     const nivelAjustadoRef = useRef(false);
     const [shouldStartChat, setShouldStartChat] = useState(false);
@@ -66,18 +67,6 @@ export default function ChessApp() {
     const iniciarProximaPartida = useCallback(() => {
 
         const { partidaTerminada, ganador } = gameState;
-        /*
-        if (partidaTerminada && ganador && !nivelAjustadoRef.current) {
-
-            console.log(gameState)
-            
-            
-            if (resultado) {
-                console.log(`Resultado de la partida: ${resultado}`)
-                ajustarNivel(resultado);
-                nivelAjustadoRef.current = true;
-            }
-        }*/
 
         clearInterval(intervalReinicioRef.current);
 
@@ -91,18 +80,13 @@ export default function ChessApp() {
 
             if (resultadoPartida === 'jugador') {
                 newLevel = Math.min(botLevel + 1, MAX_LEVEL);
-                console.log(`Jugador gana. Subiendo nivel a ${newLevel}`);
             } else if (resultadoPartida === 'bot') {
                 newLevel = Math.max(botLevel - 1, MIN_LEVEL);
-                console.log(`Bot gana. Bajando nivel a ${newLevel}`);
             } else {
                 newLevel = botLevel;
-                console.log('Resultado no afecta el nivel. Manteniendo nivel.');
             }
             return newLevel;
         })();
-
-        console.log('nivel bot:', resultado)
 
         iniciarPartidaContraBot(resultado, nextColor);
         setJugadorColor(nextColor);
@@ -143,20 +127,17 @@ export default function ChessApp() {
 
         const votesMap = userVotesMapRef.current; // Mapa de Autor -> Voto
 
-        console.log('VOTOS------',votesMap)
-
         setUserScores(prevScores => {
             const newScores = { ...prevScores };
             
             votesMap.forEach((move, author) => {
-                const authorName = author.name;
+                //const authorName = author.name;
                 // Si el voto del usuario coincide con el movimiento ganador
                 if (move === winningMove) {
-                    newScores[authorName] = (newScores[authorName] || 0) + points;
+                    newScores[author] = (newScores[author] || 0) + points;
                 }
             });
-
-            console.log(`Puntos otorgados: ${points} por el movimiento ${winningMove}.`);
+            
             return newScores;
         });
 
@@ -188,7 +169,6 @@ export default function ChessApp() {
                     const currentVotes = votesRef.current;
                     let legalMoveFound = false;
                     let winningMove = null;
-                    console.log('total votos nuevos --- ',currentVotes);
 
                     //EJECUTAR MOVIMIENTO POR TIEMPO ACABADO
                     if(currentVotes.length > 0){
@@ -207,15 +187,17 @@ export default function ChessApp() {
                         }
                         updateProposedMoves([]);
 
+                        // 🚨 OTORGAR PUNTOS 🚨
+                        if (winningMove) {
+                            awardScores(winningMove);
+                        }
+
                     }else{
                         winningMove = topMovesRef.current[0]?.move || null;
                         handleTimeout(topMovesRef);
                     }
 
-                    // 🚨 OTORGAR PUNTOS 🚨
-                    if (winningMove) {
-                        awardScores(winningMove);
-                    }
+                    
                     
                     setProposedMoves([]);
                     return 0;
@@ -278,6 +260,7 @@ export default function ChessApp() {
                     setProposedMoves={setProposedMoves}
                     userVotesMapRef={userVotesMapRef}
                     userScores={userScores}
+                    gamesId={gameState.gameId}
                 />                
             </section>
              {/* CENTRO: Pasa la posición actual del tablero y la función para mover }*/}
@@ -313,7 +296,11 @@ export default function ChessApp() {
                     partidaTerminada={gameState.partidaTerminada}
                 />
             </section>
-            
+
+            {/* ABAJO: Informacion Basica */}
+            <section style={containerInformationStyle}>
+                <MoveHelpBar />
+            </section>
         </div>
     );
 }
@@ -321,10 +308,10 @@ export default function ChessApp() {
 const appContainerStyle = {
     display: 'grid',
     gridTemplateColumns: '1fr 2fr 1fr',
-    gap: '20px',
+    gridTemplateRows: 'auto auto',
+    gap: '10px',
     padding: '10px',
     maxWidth: '100%',
-    margin: '10px auto',
     alignItems: 'flex-start',
 };
 
@@ -340,3 +327,8 @@ const initialMessageStyle = {
     textAlign: 'center',
     color: 'white',
 };
+
+const containerInformationStyle = {
+    gridColumn: '1 / 4',
+    width: '100%',
+}

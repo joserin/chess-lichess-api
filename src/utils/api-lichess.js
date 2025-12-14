@@ -1,6 +1,5 @@
 const VITE_PUBLIC_TOKEN_API_LICHESS = import.meta.env.VITE_PUBLIC_TOKEN_API_LICHESS
 
-
 export async function SendMove(gameId, moveUCI){
 
     const endpoint = `https://lichess.org/api/board/game/${gameId}/move/${moveUCI}`;
@@ -50,6 +49,17 @@ export async function FetchGameById(gameId){
 
     const response = await fetch(url, {
         method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${VITE_PUBLIC_TOKEN_API_LICHESS}`,
+        },
+    });
+    return response;
+}
+
+export async function ResignGame(gameId) {
+    const endpoint = `https://lichess.org/api/bot/game/${gameId}/resign`;
+    const response = await fetch(endpoint, {
+        method: 'POST',
         headers: {
             'Authorization': `Bearer ${VITE_PUBLIC_TOKEN_API_LICHESS}`,
         },

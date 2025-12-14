@@ -1,5 +1,3 @@
-import React, { useState, useEffect, useRef } from 'react';
-
 /**
  * Función auxiliar para formatear segundos a MM:SS
  * @param {number} totalSeconds El tiempo total en segundos.
