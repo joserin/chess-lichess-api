@@ -11,7 +11,7 @@ import React, { useState, useRef, useEffect } from 'react';
  */
 const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }) => {
   // Estado local para almacenar el valor del input del movimiento
-  const [inputValue, setInputValue] = useState('');
+  //const [inputValue, setInputValue] = useState('');
   const historyBoxRef = useRef(null);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }
             historyBox.scrollTop = historyBox.scrollHeight;
         }
     }, [historial]);
-
+  /*
   // Función para manejar el envío del formulario
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,7 +32,7 @@ const MatchViewer = ({ historial = [], turno, onMove, partidaTerminada = false }
       onMove(movimiento); 
       setInputValue(''); // Limpiar el input después de enviar
     }
-  };
+  };*/
 
   // Función para renderizar el historial en un formato de lista
   const renderHistorial = () => {

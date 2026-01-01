@@ -57,12 +57,13 @@ export async function FetchGameById(gameId){
 }
 
 export async function ResignGame(gameId) {
-    const endpoint = `https://lichess.org/api/bot/game/${gameId}/resign`;
+    const endpoint = `https://lichess.org/api/board/game/${gameId}/resign`;
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${VITE_PUBLIC_TOKEN_API_LICHESS}`,
         },
     });
+
     return response;
 }

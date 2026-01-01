@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ResignGame } from '../utils/api-lichess';
 import axios from 'axios';
 
 /**
@@ -204,30 +203,6 @@ export const useYoutubeLiveChat = (shouldStart, onNewMessage, YOUTUBE_API_KEY, L
     // FUNCIÓN AUXILIAR PARA PROCESAR EL TEXTO Y EXTRAER MOVIMIENTOS
     // ---------------------------------------------------------------------
     const procesarMensaje = (rawMessage) => {
-
-        
-
-        if (rawMessage.includes('resign')) {
-            
-            // 💡 LLAMADA AL SERVIDOR DE LICHESS AQUÍ
-            if (GAME_ID) {
-                ResignGame(GAME_ID).then(res => {
-                    if (res.ok) {
-                        console.log("Comando de rendición ejecutado con éxito.");
-                        // Si quieres notificar al componente padre que la partida terminó:
-                        // onNewMessage({ command: 'resign', success: true });
-                    } else {
-                        console.error("Fallo al ejecutar la rendición. Estado:", res.status);
-                    }
-                }).catch(error => {
-                    console.error("Error de red al intentar la rendición:", error);
-                });
-            } else {
-                console.warn("Se recibió /resign, pero no hay GAME_ID activo.");
-            }
-            
-            return null; 
-        }
         
         // Regex para encontrar movimientos de ajedrez en formato UCI (e.g., e2e4)
         const patron_ajedrez = /m-[a-h][1-8][a-h][1-8]/g;

@@ -1,7 +1,5 @@
 // src/components/MoveHelpBar.jsx (Ejemplo de estructura)
 
-import React from 'react';
-
 const MoveHelpBar = () => {
     return (
         <div className="flex flex-col mt-3">
@@ -41,18 +39,6 @@ const MoveHelpBar = () => {
                             <p className='underline'>Captura al Paso: </p>
                         </h5>
                         <span>d5c6 (origen/destino)</span>
-                    </article>
-                </section>
-            </div>
-            <div className="flex gap-1 justify-between items-center">
-                <section className='w-1/2 m-1 p-1'>
-                    {/* Rendirse */}
-                    <article className="flex gap-5 items-center text-xl">
-                        <h5 className='flex gap-2'>
-                            <span role="img" aria-label="castling-short">🏰</span>
-                            <p className='underline'>Rendirse: </p>
-                        </h5>
-                        <p >resign</p>
                     </article>
                 </section>
             </div>

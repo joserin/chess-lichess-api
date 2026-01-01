@@ -1,6 +1,6 @@
 import { useYoutubeLiveChat } from '../hooks/useYoutubeLiveChat';
 import { useConfigLoader } from '../hooks/useConfigLoader';
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { ResignGame } from '../utils/api-lichess';
 
 /**
  * Componente que muestra el historial de movimientos y un campo de entrada para la jugada.
@@ -41,6 +41,26 @@ const GetAnalysis = ({
         gamesId || null
     );
 
+    // 2. Función para manejar la rendición
+    const handleResignClick = async () => {
+        if (!gamesId) return;
+
+        const confirmResign = window.confirm("¿Estás seguro de que deseas rendirte?");
+        if (confirmResign) {
+            try {
+                const response = await ResignGame(gamesId);
+                if (response.ok) {
+                    alert("Te has rendido de la partida.");
+                    // Aquí podrías agregar lógica adicional si necesitas refrescar el estado global
+                } else {
+                    console.error("Error al intentar rendirse");
+                }
+            } catch (error) {
+                console.error("Error de red:", error);
+            }
+        }
+    };
+
 
     const nextMatchTimeDisplay = formatTime(tiempoRestanteReinicio);
   
@@ -57,7 +77,15 @@ const GetAnalysis = ({
                     <button style={buttonStyle}>Próxima partida en {nextMatchTimeDisplay}</button>
                 ) : (
                     // Opción 3: Juego en curso
-                    <button style={buttonStyle}>En Juego</button>
+                    <div className="flex flex-row gap-2">
+                        <button style={buttonActiveStyle}>En Juego</button>
+                        <button 
+                            style={resignButtonStyle} 
+                            onClick={handleResignClick}
+                        >
+                            🏳️ Rendirse
+                        </button>
+                    </div>
                 )}
             </section>
             <section className='w-full flex flex-col gap-3'>
@@ -114,3 +142,14 @@ const topMovesStyle = {
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
 }
 
+const buttonActiveStyle = {
+    ...buttonStyle,
+    backgroundColor: '#1e293b', 
+    cursor: 'default'
+}
+
+const resignButtonStyle = {
+    ...buttonStyle,
+    backgroundColor: '#b91c1c', // Un rojo intenso para indicar acción crítica
+    marginTop: '4px'
+};
